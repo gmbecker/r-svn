@@ -18,7 +18,7 @@
 
 aspell <-
 function(files, filter, control = list(), encoding = "unknown",
-         program = NULL, dictionaries = character())
+         program = NULL, dictionaries = character(), preparse_filter = NULL)
 {
     ## Take the given files and feed them through spell checker in
     ## Ispell pipe mode.
@@ -61,6 +61,8 @@ function(files, filter, control = list(), encoding = "unknown",
             warning(gettextf("Filter '%s' is not available.",
                              filter_name),
                     domain = NA)
+        if(is.null(preparse_filter))
+            preparse_filter <- filter_name
     }
     else if(is.list(filter)) {
         ## Support
@@ -74,6 +76,8 @@ function(files, filter, control = list(), encoding = "unknown",
             warning(gettextf("Filter '%s' is not available.",
                              filter_name),
                     domain = NA)
+        if(is.null(preparse_filter))
+            preparse_filter <- filter_name
     }
     else if(!is.function(filter))
         stop("Invalid 'filter' argument.")
@@ -124,6 +128,17 @@ function(files, filter, control = list(), encoding = "unknown",
         }
     }
 
+    if(is.character(preparse_filter)) {
+        ## Look up filter in aspell filter db.
+        prep_filter_name <- preparse_filter[1L]
+        preparse_filter <- aspell_prep_filter_db[[prep_filter_name]]
+        ## Warn if the filter was not found in the db.
+        if(is.null(preparse_filter))
+            warning(gettextf("Pre-parse filter '%s' is not available.",
+                             prep_filter_name),
+                    domain = NA)
+
+    }
     ## No special expansion of control argument for now.
     control <- as.character(control)
 
@@ -154,6 +169,17 @@ function(files, filter, control = list(), encoding = "unknown",
         if(verbose)
             message(gettextf("Processing file %s", fname),
                     domain = NA)
+
+        ## apply preparse filter and write to temporary file
+        ## which will be passed to filter (which can assume
+        ## it's able to parse the text, e.g., in the LaTeX
+        ## case)
+        if(!is.null(preparse_filter)) {
+            prep_tfile <- tempfile()
+            prep_lines <- preparse_filter(file)
+            writeLines(prep_lines, prep_tfile)
+            file <- prep_tfile
+        }
 
         lines <- if(is.null(filter))
             readLines(file, encoding = enc, warn = FALSE)
@@ -1261,6 +1287,10 @@ aspell_filter_db$LaTeX <-
 function(ifile, encoding = "unknown", ...)
     aspell_filter_LaTeX_worker(readLines(ifile, encoding = encoding),
                                ...)
+
+## sweave bits now taken care of in preparse filter
+aspell_filter_db$`Sweave+LaTeX` <- aspell_filter_db$LaTeX
+
 aspell_filter_LaTeX_worker <-
 function(x, cmds = NULL, envs = NULL, parser = tools::parseLatex, ...)
 {
@@ -1350,15 +1380,16 @@ aspell_filter_LaTeX_commands <-
       "nocite p", "psfig p", "selectlanguage p", "includegraphics op",
       "bibitem op", "geometry p")
 
-## <FIXME>
-## Try to merge into the Sweave filter.
-## Note that currently we cannot pass filter args when using
-## aspell_package_vignettes().
-aspell_filter_db$`Sweave+LaTeX` <-
-function(ifile, encoding = "unknown", ...)
-    aspell_filter_LaTeX_worker(tools::SweaveTeXFilter(ifile, encoding),
-                               ...)
-## </FIXME>
+## ## <FIXME>
+## ## Try to merge into the Sweave filter.
+## ## Note that currently we cannot pass filter args when using
+## ## aspell_package_vignettes().
+## aspell_filter_db$`Sweave+LaTeX` <-
+## function(ifile, encoding = "unknown", preparse_filter = list(tools::SweaveTeXFilterLines, syntax = SweaveGetSyntax(ifile)), ...)
+##     aspell_filter_LaTeX_worker(readLines(ifile, encoding = encoding),
+##                                preparse_filter = preparse_filter,
+##                                ...)
+## ## </FIXME>
 
 ## For spell checking packages.
 
@@ -1573,3 +1604,9 @@ function(dictionary, add = character())
     writeLines(new, txt, useBytes = TRUE)
     saveRDS(new, rds)
 }
+
+## Should we default to tools:::blankURLs everywhere? Currently I don't
+## to preserve exact backwards compatibility, but it seems
+## like a good idea...
+aspell_prep_filter_db <- list("Sweave+LaTeX" = tools::SweaveTeXFilter,
+                              LaTeX = tools:::blankURLs)

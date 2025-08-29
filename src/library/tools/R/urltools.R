@@ -213,6 +213,9 @@ function(v)
     urls
 }
 
+## pulled out for use in Sweave/tex aspell pre-parsing filters
+url_regex <- "((https?|s?ftps?)://[[:alnum:]/.:@+\\_~%#?=&;,-]+[[:alnum:]/])"
+
 .get_urls_from_DESCRIPTION_Description_field <-
 function(v)
 {
@@ -224,7 +227,7 @@ function(v)
     urls <- c(urls, .gregexec_at_pos(pattern, v, m, 3L))
     regmatches(v, m) <- ""
     pattern <-
-        "([^>\"?])((https?|ftp)://[[:alnum:]/.:@+\\_~%#?=&;,-]+[[:alnum:]/])"
+        paste0("([^>\"?])", url_regex)
     m <- gregexpr(pattern, v)
     urls <- c(urls, .gregexec_at_pos(pattern, v, m, 3L))
     regmatches(v, m) <- ""
@@ -642,25 +645,6 @@ function(db, remote = TRUE, verbose = FALSE, parallel = FALSE, pool = NULL)
 
     ## http/https.
     pos <- which(schemes == "http" | schemes == "https")
-    if(length(pos)) {
-        ## Catch malformedURLs like 'http:/foo/bar' and 'https:///foo/bar'.
-        if(any(ind <- !nzchar(parts[pos, "authority"]))) {
-            len <- sum(ind)
-            msg <- rep.int("Invalid URL: missing authority part", len)
-            bad <- rbind(bad,
-                         .gather(urls[pos[ind]], parents[pos[ind]],
-                                 m = msg))
-            pos <- pos[!ind]
-        }
-        if(any(ind <- grepl("#", parts[pos, "fragment"]))) {
-            len <- sum(ind)
-            msg <- rep.int("Invalid URL: '#' not allowed in fragment", len)
-            bad <- rbind(bad,
-                         .gather(urls[pos[ind]], parents[pos[ind]],
-                                 m = msg))
-            pos <- pos[!ind]
-        }
-    }
     if(length(pos) && remote) {
         urlspos <- urls[pos]
         ## Check DOI URLs via the DOI handle API, as we nowadays do for
