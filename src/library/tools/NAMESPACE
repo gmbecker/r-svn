@@ -4,7 +4,7 @@ useDynLib(tools, .registration = TRUE, .fixes = "C_")
 
 export("Adobe_glyphs", "HTMLheader", "Rcmd", "Rd2HTML", "pkg2HTML", "Rd2ex",
        "Rd2latex", "Rd2txt", "Rd2txt_options", "RdTextFilter", "Rd_db",
-       "Rdiff", "Rdindex", "SweaveTeXFilter", "add_datalist",
+       "Rdiff", "Rdindex", "SweaveTeXFilter", "blankURLs", "url_regex", "add_datalist",
        "as.Rconcordance",
        "assertCondition", "assertError", "assertWarning", "bibstyle",
        "buildVignette", "buildVignettes", "charset_to_Unicode",

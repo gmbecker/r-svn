@@ -34,6 +34,12 @@ aspell(files, filter, control = list(), encoding = "unknown",
     separator specify R system dictionaries (in subdirectory
     \file{share/dictionaries} of the R home directory).  The file
     extension (currently, only \file{.rds}) can be omitted.}
+  \item{preparse_filter}{an optional \emph{pre-parsing} filter, in
+    the same format as \code{filter}, i.e., character, list, or
+    function. See \bold{Details} for the distinction between this
+    and \code{filter}. If \code{filter} is a character or list, this will
+    default to a built-in pre-parsing filter of the same name, if
+    available.}
 }
 \details{
   The spell check programs employed must support the so-called Ispell
@@ -50,6 +56,13 @@ aspell(files, filter, control = list(), encoding = "unknown",
   against the \I{Cygwin} runtime (package \code{aspell}) requires Unix line
   endings in files and Unix-style paths, which is incompatible with
   \code{aspell()}.
+
+  Pre-parsing filters (\code{preparse_filter}) should operate on the
+  raw text of \code{file}, while standard filters (\code{filter}) can
+  assume they will be able to parse the without error. Currently,
+  this is most relevant for LaTeX-based file formats, where the
+  currently available parsers do not support corner-cases such as
+  URLs with the % symbol in them. 
 
   The currently available built-in filters are \code{"Rd"}
   (corresponding to \code{\link{RdTextFilter}}, with additional argument
@@ -81,6 +94,14 @@ aspell(files, filter, control = list(), encoding = "unknown",
   \href{https://en.wikipedia.org/wiki/Markdown}{Markdown} format
   (\file{.md} and \file{.Rmd} files), and needs packages
   \CRANpkg{commonmark} and \CRANpkg{xml2} to be available.
+
+  Pre-parsing filter \code{"Sweave+LaTeX"} is for code{Sweave} documents
+  and invokes \code{\link[pkg:tools]{SweaveTeXFilter}} - so named for
+  backwards compatability - which removes Sweave code chunks as well
+  as blanking out URLs via \code{\link[pkg:tools]{blankURLs}}.
+
+  Pre-parsing filter \code{"LaTeX"} blanks out URLs via
+  \code{\link[pkg:tools]{blankURLs}}.
 
   The print method for the objects returned by \code{aspell} has an
   \code{indent} argument controlling the indentation of the positions of

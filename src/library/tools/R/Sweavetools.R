@@ -16,7 +16,22 @@
 #  A copy of the GNU General Public License is available at
 #  https://www.R-project.org/Licenses/
 
+urlTeXCmds <- c("href", "url")
 
+blankURLs <- function(lines) {
+    ## could combine these into one more complicated regex that
+    lines <- gsub(paste0("\\(", paste(urlTeXCmds, collapse = "|"), ")[{][^}]+[}]"),
+         "",
+         lines)
+    lines <- gsub(url_regex,
+                  "",
+                  lines)
+    lines
+}
+
+## This is now officially considered a preparse-filter
+## it always acted as such, as it was used via
+## aspell_filter_LaTeX_worker(SweaveTeXFilter(ifile, ...))
 SweaveTeXFilter <-
 function(ifile, encoding = "unknown")
 {
@@ -57,5 +72,5 @@ function(ifile, encoding = "unknown")
     	state <- recs$type[i]
     	last <- line
     }
-    lines
+    lines <- blankURLs(lines)
 }
